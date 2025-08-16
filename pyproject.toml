@@ -1,0 +1,11 @@
+[project]
+name = "kbeats-matcher"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pandas>=2.3.1",
+    "pydantic>=2.11.7",
+    "streamlit>=1.48.1",
+]
