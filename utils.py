@@ -138,7 +138,7 @@ def generate_dance_based_csv(
     matching: Matching, dances: list[Dance], tl_matching: TLMatching
 ) -> pd.DataFrame:
     """
-    Generate dance-based CSV with TL names bolded.
+    Generate dance-based CSV with TL names in dedicated column.
     Ordered by num_dancers descending for each dance.
     Each dancer appears in a separate column.
     """
@@ -147,31 +147,43 @@ def generate_dance_based_csv(
     # Sort dances by num_dancers descending
     sorted_dances = sorted(dances, key=lambda d: d.num_dancers, reverse=True)
 
-    # Find maximum number of dancers to determine column count
+    # Find maximum number of dancers (excluding TLs) to determine column count
     max_dancers = max(
-        len(matching.dances_to_dancers.get(dance.name, [])) for dance in dances
+        len([person for person in matching.dances_to_dancers.get(dance.name, []) 
+             if person not in tl_matching.dances_to_tls.get(dance.name, [])])
+        for dance in dances
     )
 
     for dance in sorted_dances:
         dance_name = dance.name
-        dancers = matching.dances_to_dancers.get(dance_name, [])
+        all_people = matching.dances_to_dancers.get(dance_name, [])
         tls = tl_matching.dances_to_tls.get(dance_name, [])
+        
+        # Separate regular dancers from TLs
+        dancers = [person for person in all_people if person not in tls]
 
-        # Create row data with bolded dance name and dancer count
+        # Create row data with dance name and dancer count
         formatted_dance_name = f"{dance_name} ({dance.num_dancers})"
         row_data = {"Dance": formatted_dance_name}
+        
+        # Add TLs column - comma-delimited if multiple TLs
+        tls_str = ", ".join(tls) if tls else ""
+        row_data["TLs"] = tls_str
 
-        # Add each dancer in separate columns, bolding TLs
+        # Add each dancer in separate columns, with first column labeled "Dancers"
         for i, dancer in enumerate(dancers):
-            col_name = "" if i == 0 else f" " * (i)  # Empty or spaces for unique keys
-            if dancer in tls:
-                row_data[col_name] = f"{dancer}"
+            if i == 0:
+                col_name = "Dancers"
             else:
-                row_data[col_name] = dancer
+                col_name = f" " * i  # Spaces for unique keys
+            row_data[col_name] = dancer
 
         # Fill empty columns for dances with fewer dancers
         for i in range(len(dancers), max_dancers):
-            col_name = f" " * i if i > 0 else ""
+            if i == 0:
+                col_name = "Dancers"
+            else:
+                col_name = f" " * i
             row_data[col_name] = ""
 
         dance_data.append(row_data)
@@ -227,14 +239,14 @@ def generate_dancer_based_csv(
         rankings_str = ",".join(str(r) for r in dance_rankings_assigned)
         row_data["Rankings"] = rankings_str
 
-        # Add each dance in separate columns
+        # Add each dance in separate columns with proper column names
         for i, dance in enumerate(dances):
-            col_name = "" if i == 0 else f" " * (i)  # Empty or spaces for unique keys
+            col_name = f"Dance {i + 1}"
             row_data[col_name] = dance
 
         # Fill empty columns for dancers with fewer dances
         for i in range(len(dances), max_dances_count):
-            col_name = f" " * i if i > 0 else ""
+            col_name = f"Dance {i + 1}"
             row_data[col_name] = ""
 
         dancer_data.append(row_data)

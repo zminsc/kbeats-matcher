@@ -1,4 +1,5 @@
 from collections import defaultdict
+from copy import deepcopy
 import random
 from constants import SENIORITY_ORDER
 from schemas import Member, Dance, Matching, TLMatching
@@ -107,11 +108,11 @@ def match(
     if not tl_matching:
         tl_matching = match_tls(members, dances)
 
-    dances_to_members = {
-        dance.name: tl_matching.dances_to_tls.get(dance.name, []) for dance in dances
+    dances_to_dancers = {
+        dance.name: deepcopy(tl_matching.dances_to_tls.get(dance.name, [])) for dance in dances
     }
-    members_to_dances = {
-        member.name: tl_matching.tls_to_dances.get(member.name, [])
+    dancers_to_dances = {
+        member.name: deepcopy(tl_matching.tls_to_dances.get(member.name, []))
         for member in members
     }
 
@@ -120,13 +121,13 @@ def match(
             members=members,
             dances=dances,
             rank=i,
-            dances_to_members=dances_to_members,
-            members_to_dances=members_to_dances,
+            dances_to_members=dances_to_dancers,
+            members_to_dances=dancers_to_dances,
         )
 
         for dance_name, candidates in dances_to_candidates.items():
             dance = next((d for d in dances if d.name == dance_name))
-            num_missing_dancers = dance.num_dancers - len(dances_to_members[dance_name])
+            num_missing_dancers = dance.num_dancers - len(dances_to_dancers[dance_name])
 
             shuffled_members: list[Member] = candidates[:]
             random.shuffle(shuffled_members)
@@ -139,15 +140,15 @@ def match(
                 ),
             )[:num_missing_dancers]
 
-            dances_to_members[dance_name].extend(
+            dances_to_dancers[dance_name].extend(
                 [dancer.name for dancer in selected_dancers]
             )
             for dancer in selected_dancers:
-                members_to_dances[dancer.name].append(dance_name)
+                dancers_to_dances[dancer.name].append(dance_name)
 
     matching = Matching(
-        dances_to_members,
-        members_to_dances,
+        dances_to_dancers,
+        dancers_to_dances,
     )
 
     return (
