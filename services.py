@@ -1,140 +1,156 @@
-import random
 from collections import defaultdict
-
+import random
 from constants import SENIORITY_ORDER
-from schemas import Candidate, Dance, Matching
+from schemas import Member, Dance, Matching, TLMatching
 
-class Matcher:
 
-    def __init__(self, candidates: list[Candidate], dances: list[Dance]) -> None:
-        self.candidates = {candidate.name: candidate for candidate in candidates}
-        self.dances = {dance.name: dance for dance in dances}
+def _get_eligible_members_by_dance(
+    members: list[Member],
+    dances: list[Dance],
+    rank: int,
+    dances_to_members: dict[str, list[str]],
+    members_to_dances: dict[str, list[str]],
+    is_tl: bool = False,
+) -> dict[str, list[Member]]:
+    eligible_members: dict[str, list[Member]] = defaultdict(list)
 
-    def run(self) -> Matching:
-        tl_matching = self._match_tls()
-        return self._match_candidates(tl_matching)
-    
-    def _match_tls(self) -> Matching:
-        dances_to_dancers: dict[str, list[str]] = defaultdict(list)
+    for member in members:
+        if rank >= len(member.dance_rankings):
+            continue
 
-        for i in range(1, len(self.dances) + 1):
-            dances_to_candidates: dict[str, list[Candidate]] = defaultdict(list)
+        dance_name = member.dance_rankings[rank]
+        dance = next((d for d in dances if d.name == dance_name))
 
-            for candidate in self.candidates.values():
-                if i not in candidate.dance_rankings:
-                    continue
-                n_ranked_dance_name = candidate.dance_rankings[i]
-                if n_ranked_dance_name in candidate.dances_willing_to_tl:
-                    dances_to_candidates[n_ranked_dance_name].append(candidate)
+        # filter out member if already in the dance
+        if member.name in dances_to_members[dance_name]:
+            continue
 
-            for dance_name, candidates in dances_to_candidates.items():
-                num_existing_tls = len(dances_to_dancers[dance_name])
+        # pass if dance is at full capacity
+        if len(dances_to_members[dance_name]) >= dance.num_dancers:
+            continue
 
-                if num_existing_tls == 2:
-                    # co-TLs have already been assigned / selected
-                    continue
-                elif num_existing_tls == 1:
-                    # filter candidates based on who the assigned TL is willing to co-TL with
-                    existing_tl = self.candidates[dances_to_dancers[dance_name][0]]
-                    candidates = [c for c in candidates if c.name in existing_tl.allowed_co_tls]
+        # pass if member doesn't want to be considered
+        if len(members_to_dances[member.name]) >= member.max_dances:
+            continue
+        elif (rank + 1) > member.max_rank:
+            continue
+        elif is_tl and len(members_to_dances[member.name]) >= member.max_tl:
+            continue
+        elif is_tl and dance_name not in member.dances_willing_to_tl:
+            continue
 
-                selected_tls = self._resolve_tl_tiebreaks(candidates, (num_existing_tls == 0))
-                selected_tl_names = [tl.name for tl in selected_tls]
-                dances_to_dancers[dance_name].extend(selected_tl_names)
+        eligible_members[dance_name].append(member)
 
-        dancers_to_dances = defaultdict(list)
-        for dance_name, dancer_names in dances_to_dancers.items():
-            for dancer_name in dancer_names:
-                dancers_to_dances[dancer_name].append(dance_name)
+    return eligible_members
 
-        return Matching(
-            dancers_to_dances,
-            dances_to_dancers,
-            {k: list(v) for k, v in dances_to_dancers.items()},
+
+def match_tls(members: list[Member], dances: list[Dance]) -> TLMatching:
+    dances_to_tls: dict[str, list[str]] = defaultdict(list)
+    tls_to_dances: dict[str, list[str]] = defaultdict(list)
+
+    for i in range(len(dances)):
+        dances_to_tl_members = _get_eligible_members_by_dance(
+            members=members,
+            dances=dances,
+            rank=i,
+            dances_to_members=dances_to_tls,
+            members_to_dances=tls_to_dances,
+            is_tl=True,
         )
-    
-    def _match_candidates(self, tl_matching: Matching) -> Matching:
-        dancers_to_dances = tl_matching.dancers_to_dances
-        dances_to_dancers = tl_matching.dances_to_dancers
-        dance_tls = tl_matching.dance_tls
 
-        for i in range(1, len(self.dances) + 1):
-            dances_to_candidates: dict[str, list[Candidate]] = defaultdict(list)
+        for dance_name, tl_members in dances_to_tl_members.items():
+            if not tl_members:
+                continue
 
-            remaining_candidates = [
-                candidate for candidate in self.candidates.values()
-                if len(dancers_to_dances.get(candidate.name, [])) < candidate.max_dances
-                and i <= candidate.max_rank
+            existing_tls = dances_to_tls[dance_name]
+            # pass if TL limit reached. error if more than 2 TLs assigned.
+            if len(existing_tls) > 2:
+                raise ValueError("Can't assign more than 2 TLs per dance.")
+            if len(existing_tls) == 2:
+                continue
+
+            # otherwise, fetch or select the first TL for the dance.
+            first_tl_name = existing_tls[0] if len(existing_tls) == 1 else None
+            first_tl: Member
+            if first_tl_name:
+                first_tl = next(c for c in members if c.name == first_tl_name)
+            else:
+                first_tl = random.choice(tl_members)
+                dances_to_tls[dance_name].append(first_tl.name)
+                tls_to_dances[first_tl.name].append(dance_name)
+
+            # select a co-TL if possible.
+            second_tl_members = [
+                c
+                for c in tl_members
+                if c.name != first_tl.name
+                and c.name in first_tl.allowed_co_tls
+                and first_tl.name in c.allowed_co_tls
             ]
+            if not second_tl_members:
+                continue
+            second_tl = random.choice(second_tl_members)
+            dances_to_tls[dance_name].append(second_tl.name)
+            tls_to_dances[second_tl.name].append(dance_name)
 
-            for candidate in remaining_candidates:
-                if i not in candidate.dance_rankings:
-                    continue
-                n_ranked_dance_name = candidate.dance_rankings[i]
+    return TLMatching(
+        dances_to_tls,
+        tls_to_dances,
+    )
 
-                # could have already been selected as TL
-                if candidate.name not in dances_to_dancers[n_ranked_dance_name]:
-                    dances_to_candidates[n_ranked_dance_name].append(candidate)
-            
-            for dance_name, candidates in dances_to_candidates.items():
-                dancers_needed = self.dances[dance_name].num_dancers - len(dances_to_dancers[dance_name])
-                selected_candidates = self._resolve_tiebreaks_using_heuristics(candidates, dancers_needed)
-                selected_candidate_names = [c.name for c in selected_candidates]
-                dances_to_dancers[dance_name].extend(selected_candidate_names)
 
-                for selected_candidate_name in selected_candidate_names:
-                    if selected_candidate_name not in dancers_to_dances:
-                        dancers_to_dances[selected_candidate_name] = []
-                    dancers_to_dances[selected_candidate_name].append(dance_name)
+def match(
+    members: list[Member],
+    dances: list[Dance],
+    tl_matching: TLMatching | None = None,
+) -> tuple[Matching, TLMatching]:
+    if not tl_matching:
+        tl_matching = match_tls(members, dances)
 
-        return Matching(
-            dancers_to_dances,
-            dances_to_dancers,
-            dance_tls,
+    dances_to_members = {
+        dance.name: tl_matching.dances_to_tls.get(dance.name, []) for dance in dances
+    }
+    members_to_dances = {
+        member.name: tl_matching.tls_to_dances.get(member.name, [])
+        for member in members
+    }
+
+    for i in range(len(dances)):
+        dances_to_candidates: dict[str, list[Member]] = _get_eligible_members_by_dance(
+            members=members,
+            dances=dances,
+            rank=i,
+            dances_to_members=dances_to_members,
+            members_to_dances=members_to_dances,
         )
-    
-    def _resolve_tl_tiebreaks(self, candidates: list[Candidate], finding_co_tl: bool) -> list[Candidate]:
-        if len(candidates) == 0:
-            return []
-        
-        tls = self._resolve_tiebreaks_random(candidates, 1)
 
-        if len(tls) == 0 or not finding_co_tl:
-            return tls
+        for dance_name, candidates in dances_to_candidates.items():
+            dance = next((d for d in dances if d.name == dance_name))
+            num_missing_dancers = dance.num_dancers - len(dances_to_members[dance_name])
 
-        co_tl_candidates = [c for c in candidates if c.name in tls[0].allowed_co_tls and tls[0].name in c.allowed_co_tls]
-        tls.extend(self._resolve_tiebreaks_random(co_tl_candidates, 1))
-        return tls
+            shuffled_members: list[Member] = candidates[:]
+            random.shuffle(shuffled_members)
+            selected_dancers: list[Member] = sorted(
+                shuffled_members,
+                key=lambda x: (
+                    SENIORITY_ORDER[x.seniority],
+                    x.lateness_score,
+                    x.busyness_score,
+                ),
+            )[:num_missing_dancers]
 
-    def _resolve_tiebreaks_random(self, candidates: list[Candidate], num_spots: int) -> list[Candidate]:
-        if num_spots == 0:
-            return []
-        if len(candidates) <= num_spots:
-            return candidates
-
-        # completely random selection for TL tiebreaks
-        shuffled_candidates = candidates[:]
-        random.shuffle(shuffled_candidates)
-        return shuffled_candidates[:num_spots]
-    
-    def _resolve_tiebreaks_using_heuristics(self, candidates: list[Candidate], num_spots: int) -> list[Candidate]:
-        if num_spots == 0:
-            return []
-        if len(candidates) <= num_spots:
-            return candidates
-
-        # shuffle candidates to randomize order among exact ties
-        shuffled_candidates = candidates[:]
-        random.shuffle(shuffled_candidates)
-        
-        sorted_candidates = sorted(
-            shuffled_candidates,
-            key=lambda c: (
-                SENIORITY_ORDER[c.seniority],
-                c.max_dances,
-                c.lateness_score,
-                c.busyness_score,
+            dances_to_members[dance_name].extend(
+                [dancer.name for dancer in selected_dancers]
             )
-        )
+            for dancer in selected_dancers:
+                members_to_dances[dancer.name].append(dance_name)
 
-        return sorted_candidates[:num_spots]
+    matching = Matching(
+        dances_to_members,
+        members_to_dances,
+    )
+
+    return (
+        matching,
+        tl_matching,
+    )

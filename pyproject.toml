@@ -8,4 +8,5 @@ dependencies = [
     "pandas>=2.3.1",
     "pydantic>=2.11.7",
     "streamlit>=1.48.1",
+    "watchdog>=6.0.0",
 ]

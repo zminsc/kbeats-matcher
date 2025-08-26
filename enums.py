@@ -1,9 +1,10 @@
 from enum import StrEnum, auto
 
-class Seniority(StrEnum):
-    EXCHANGE = "EXCHANGE"
-    SENIOR = "SENIOR"
-    JUNIOR = "JUNIOR"
-    SOPHOMORE = "SOPHOMORE"
-    FRESHMAN = "FRESHMAN"
 
+class Seniority(StrEnum):
+    FRESHMAN = "FRESHMAN"
+    SOPHOMORE = "SOPHOMORE"
+    JUNIOR = "JUNIOR"
+    SENIOR = "SENIOR"
+    GRAD_STUDENT = "GRAD_STUDENT"
+    EXCHANGE = "EXCHANGE"

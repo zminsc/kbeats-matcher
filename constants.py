@@ -2,9 +2,10 @@ from enums import Seniority
 
 
 SENIORITY_ORDER = {
+    Seniority.SENIOR: 0,
+    Seniority.GRAD_STUDENT: 0,
     Seniority.EXCHANGE: 0,
-    Seniority.SENIOR: 1,
-    Seniority.JUNIOR: 2,
-    Seniority.SOPHOMORE: 3,
-    Seniority.FRESHMAN: 4,
+    Seniority.JUNIOR: 1,
+    Seniority.SOPHOMORE: 2,
+    Seniority.FRESHMAN: 3,
 }

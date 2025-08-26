@@ -1,29 +1,35 @@
-from enums import Seniority
 from typing import NamedTuple
+from enums import Seniority
 from pydantic import BaseModel, Field
 
 
 class Matching(NamedTuple):
-    dancers_to_dances: dict[str, list[str]]
     dances_to_dancers: dict[str, list[str]]
-    dance_tls: dict[str, list[str]]  # Track TLs for each dance
+    dancers_to_dances: dict[str, list[str]]
+
+
+class TLMatching(NamedTuple):
+    dances_to_tls: dict[str, list[str]]
+    tls_to_dances: dict[str, list[str]]
 
 
 class Dance(BaseModel):
     name: str
     num_dancers: int
+    included: bool = True
 
 
-class Candidate(BaseModel):
+class Member(BaseModel):
     name: str
     seniority: Seniority
     max_dances: int
     max_rank: int
 
-    dance_rankings: dict[int, str]
+    dance_rankings: list[str]
 
     lateness_score: int = 0
     busyness_score: int = 0
 
+    max_tl: int
     dances_willing_to_tl: set[str] = Field(default_factory=set)
     allowed_co_tls: set[str] = Field(default_factory=set)
