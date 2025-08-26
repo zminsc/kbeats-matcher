@@ -149,8 +149,13 @@ def generate_dance_based_csv(
 
     # Find maximum number of dancers (excluding TLs) to determine column count
     max_dancers = max(
-        len([person for person in matching.dances_to_dancers.get(dance.name, []) 
-             if person not in tl_matching.dances_to_tls.get(dance.name, [])])
+        len(
+            [
+                person
+                for person in matching.dances_to_dancers.get(dance.name, [])
+                if person not in tl_matching.dances_to_tls.get(dance.name, [])
+            ]
+        )
         for dance in dances
     )
 
@@ -158,14 +163,14 @@ def generate_dance_based_csv(
         dance_name = dance.name
         all_people = matching.dances_to_dancers.get(dance_name, [])
         tls = tl_matching.dances_to_tls.get(dance_name, [])
-        
+
         # Separate regular dancers from TLs
         dancers = [person for person in all_people if person not in tls]
 
         # Create row data with dance name and dancer count
         formatted_dance_name = f"{dance_name} ({dance.num_dancers})"
         row_data = {"Dance": formatted_dance_name}
-        
+
         # Add TLs column - comma-delimited if multiple TLs
         tls_str = ", ".join(tls) if tls else ""
         row_data["TLs"] = tls_str
@@ -222,7 +227,7 @@ def generate_dancer_based_csv(
 
         # Get dance rankings for this dancer
         dancer_rankings = dance_rankings_lookup.get(dancer, [])
-        
+
         # Find the ranking (1-based) for each assigned dance
         dance_rankings_assigned = []
         for dance in dances:
@@ -233,7 +238,7 @@ def generate_dancer_based_csv(
             except ValueError:
                 # Dance not found in rankings (shouldn't happen in normal operation)
                 dance_rankings_assigned.append("N/A")
-        
+
         # Sort the rankings and create comma-delimited string
         dance_rankings_assigned.sort()
         rankings_str = ",".join(str(r) for r in dance_rankings_assigned)

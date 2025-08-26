@@ -30,27 +30,25 @@ def matching_tab() -> None:
     if st.button("Run Matcher", type="primary"):
         try:
             random.seed()
-            included_dances = [dance for dance in st.session_state["dances"] if dance.included]
-            matching, tl_matching = match(
-                st.session_state["members"], included_dances
-            )
+            included_dances = [
+                dance for dance in st.session_state["dances"] if dance.included
+            ]
+            matching, tl_matching = match(st.session_state["members"], included_dances)
 
             # Display results
             st.subheader("Matching Results")
-            
+
             # Display satisfaction metrics
             col1, col2 = st.columns(2)
             with col1:
                 top3_satisfaction_card(matching, st.session_state["members"])
             with col2:
                 max_dances_satisfaction_card(matching, st.session_state["members"])
-            
+
             st.divider()
 
             # Generate CSV data
-            dance_csv = generate_dance_based_csv(
-                matching, included_dances, tl_matching
-            )
+            dance_csv = generate_dance_based_csv(matching, included_dances, tl_matching)
             dancer_csv = generate_dancer_based_csv(
                 matching, st.session_state["members"]
             )

@@ -6,6 +6,7 @@ from utils import (
 )
 from components.dances_by_top_3_chart import dances_by_top_3_chart
 
+
 def handle_rankings_csv_upload() -> None:
     if "rankings_csv" not in st.session_state:
         return
@@ -25,8 +26,12 @@ def handle_dances_csv_upload() -> None:
     if not st.session_state["dances_csv"]:
         return
     dances_csv = st.session_state["dances_csv"]
-    st.session_state["dances"] = sorted(process_dances_csv(dances_csv), key=lambda x: x.name)
-    st.session_state["dances_index"] = {dance.name: dance for dance in st.session_state["dances"]}
+    st.session_state["dances"] = sorted(
+        process_dances_csv(dances_csv), key=lambda x: x.name
+    )
+    st.session_state["dances_index"] = {
+        dance.name: dance for dance in st.session_state["dances"]
+    }
 
 
 def setup_tab() -> None:
@@ -52,6 +57,6 @@ def setup_tab() -> None:
         return
 
     st.success("Files processed successfully!")
-    
+
     # Display the dance rankings charts
     dances_by_top_3_chart()

@@ -109,7 +109,8 @@ def match(
         tl_matching = match_tls(members, dances)
 
     dances_to_dancers = {
-        dance.name: deepcopy(tl_matching.dances_to_tls.get(dance.name, [])) for dance in dances
+        dance.name: deepcopy(tl_matching.dances_to_tls.get(dance.name, []))
+        for dance in dances
     }
     dancers_to_dances = {
         member.name: deepcopy(tl_matching.tls_to_dances.get(member.name, []))

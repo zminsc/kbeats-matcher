@@ -15,7 +15,8 @@ def update_members_for_dance(dance_idx: int, included: bool) -> None:
 
             # update dance_rankings
             member.dance_rankings = [
-                dance_name for dance_name in original_member.dance_rankings
+                dance_name
+                for dance_name in original_member.dance_rankings
                 if dance_name == dance.name
                 or st.session_state["dances_index"][dance_name].included
             ]
@@ -25,7 +26,7 @@ def update_members_for_dance(dance_idx: int, included: bool) -> None:
                 dance_idx = original_member.dance_rankings.index(dance.name)
                 if dance_idx < original_member.max_rank:
                     member.max_rank += 1
-            
+
             # update dances_willing_to_tl
             if dance.name in original_member.dances_willing_to_tl:
                 member.dances_willing_to_tl.add(dance.name)
@@ -35,7 +36,8 @@ def update_members_for_dance(dance_idx: int, included: bool) -> None:
 
             # update dance_rankings
             member.dance_rankings = [
-                dance_name for dance_name in original_member.dance_rankings
+                dance_name
+                for dance_name in original_member.dance_rankings
                 if dance_name != dance.name
                 and st.session_state["dances_index"][dance_name].included
             ]
@@ -45,10 +47,11 @@ def update_members_for_dance(dance_idx: int, included: bool) -> None:
                 dance_idx = original_member.dance_rankings.index(dance.name)
                 if dance_idx < original_member.max_rank:
                     member.max_rank -= 1
-            
+
             # update dances_willing_to_tl
             if dance.name in member.dances_willing_to_tl:
                 member.dances_willing_to_tl.remove(dance.name)
+
 
 def handle_num_dancers_change(dance_idx: int) -> None:
     key = f"num_dancers_{dance_idx}"
