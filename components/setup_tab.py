@@ -4,7 +4,7 @@ from utils import (
     process_rankings_csv,
     process_dances_csv,
 )
-from components.dances_by_top_3_chart import dances_by_top_3_chart
+from components.dances_by_top_3_chart import dances_by_top_3_chart, dances_bottom_third_percentile_chart
 
 
 def handle_rankings_csv_upload() -> None:
@@ -60,3 +60,4 @@ def setup_tab() -> None:
 
     # Display the dance rankings charts
     dances_by_top_3_chart()
+    dances_bottom_third_percentile_chart()
