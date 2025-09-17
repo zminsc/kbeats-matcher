@@ -20,6 +20,12 @@ def dances_by_top_3_chart() -> None:
             dance_name = member.dance_rankings[i]
             dance_counts[dance_name] += 1
 
+    # Ensure all dances are included, even those with 0 appearances in top 3
+    all_dance_names = {dance.name for dance in st.session_state["dances"] if dance.included}
+    for dance_name in all_dance_names:
+        if dance_name not in dance_counts:
+            dance_counts[dance_name] = 0
+
     # Create dataframe sorted by frequency (descending)
     if dance_counts:
         chart_data = pd.DataFrame(
@@ -31,6 +37,10 @@ def dances_by_top_3_chart() -> None:
 
         st.subheader("Most Popular Dances")
 
+        # Calculate dynamic height based on number of dances (minimum 30px per dance, minimum 300px total)
+        num_dances = len(chart_data)
+        chart_height = max(300, num_dances * 30)
+
         # Create horizontal Altair chart with explicit ordering
         chart = (
             alt.Chart(chart_data)
@@ -40,7 +50,7 @@ def dances_by_top_3_chart() -> None:
                 y=alt.Y("dance:N", sort=None, title=None),
                 tooltip=["dance", "frequency"],
             )
-            .properties(height=400)
+            .properties(height=chart_height)
         )
 
         st.altair_chart(chart, use_container_width=True)
