@@ -7,5 +7,5 @@ SENIORITY_ORDER = {
     Seniority.EXCHANGE: 0,
     Seniority.JUNIOR: 1,
     Seniority.SOPHOMORE: 2,
-    Seniority.FRESHMAN: 3,
+    Seniority.NEWBIE: 3,
 }

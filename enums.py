@@ -2,7 +2,7 @@ from enum import StrEnum, auto
 
 
 class Seniority(StrEnum):
-    FRESHMAN = "FRESHMAN"
+    NEWBIE = "NEWBIE"
     SOPHOMORE = "SOPHOMORE"
     JUNIOR = "JUNIOR"
     SENIOR = "SENIOR"
