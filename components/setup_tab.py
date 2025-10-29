@@ -3,6 +3,7 @@ import streamlit as st
 from utils import (
     process_rankings_csv,
     process_dances_csv,
+    filter_member_rankings_by_valid_dances,
 )
 from components.dances_by_top_3_chart import dances_by_top_3_chart, dances_bottom_third_percentile_chart
 
@@ -18,6 +19,8 @@ def handle_rankings_csv_upload() -> None:
     st.session_state["original_members"] = {
         member.name: deepcopy(member) for member in members
     }
+    # reset filtering flag so rankings are re-filtered when both CSVs are available
+    st.session_state["rankings_filtered"] = False
 
 
 def handle_dances_csv_upload() -> None:
@@ -32,6 +35,8 @@ def handle_dances_csv_upload() -> None:
     st.session_state["dances_index"] = {
         dance.name: dance for dance in st.session_state["dances"]
     }
+    # reset filtering flag so rankings are re-filtered when both CSVs are available
+    st.session_state["rankings_filtered"] = False
 
 
 def setup_tab() -> None:
@@ -55,6 +60,19 @@ def setup_tab() -> None:
 
     if not st.session_state.get("members") or not st.session_state.get("dances"):
         return
+
+    # filter member rankings to only include valid dances
+    # this ensures rankings.csv dances that aren't in dances.csv are excluded
+    if not st.session_state.get("rankings_filtered"):
+        valid_dances = {dance.name for dance in st.session_state["dances"]}
+        filtered_members = filter_member_rankings_by_valid_dances(
+            st.session_state["members"], valid_dances
+        )
+        st.session_state["members"] = filtered_members
+        st.session_state["original_members"] = {
+            member.name: deepcopy(member) for member in filtered_members
+        }
+        st.session_state["rankings_filtered"] = True
 
     st.success("Files processed successfully!")
 

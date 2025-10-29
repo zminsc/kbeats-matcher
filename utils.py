@@ -134,6 +134,51 @@ def process_dances_csv(dances_csv: UploadedFile) -> list[Dance]:
     return dances
 
 
+def filter_member_rankings_by_valid_dances(
+    members: list[Member], valid_dances: set[str]
+) -> list[Member]:
+    """
+    filters member dance rankings to only include dances that exist in the valid dances set.
+    also filters dances_willing_to_tl to only include valid dances.
+
+    Args:
+        members: list of Member objects to filter
+        valid_dances: set of valid dance names from dances.csv
+
+    Returns:
+        list of Member objects with filtered dance rankings
+    """
+    filtered_members = []
+
+    for member in members:
+        # filter dance rankings to only include valid dances
+        filtered_dance_rankings = [
+            dance for dance in member.dance_rankings if dance in valid_dances
+        ]
+
+        # filter dances willing to TL to only include valid dances
+        filtered_dances_willing_to_tl = {
+            dance for dance in member.dances_willing_to_tl if dance in valid_dances
+        }
+
+        # create new member with filtered data
+        filtered_member = Member(
+            name=member.name,
+            seniority=member.seniority,
+            max_dances=member.max_dances,
+            max_rank=member.max_rank,
+            max_tl=member.max_tl,
+            dance_rankings=filtered_dance_rankings,
+            dances_willing_to_tl=filtered_dances_willing_to_tl,
+            allowed_co_tls=member.allowed_co_tls,
+            lateness_score=member.lateness_score,
+            busyness_score=member.busyness_score,
+        )
+        filtered_members.append(filtered_member)
+
+    return filtered_members
+
+
 def generate_dance_based_csv(
     matching: Matching, dances: list[Dance], tl_matching: TLMatching
 ) -> pd.DataFrame:
